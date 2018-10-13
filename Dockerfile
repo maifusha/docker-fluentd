@@ -5,9 +5,10 @@ LABEL maintainer="lixin <1045909037@qq.com>"
 COPY conf/fluent.conf /fluentd/etc/
 COPY entrypoint.sh /bin/entrypoint.sh
 
-RUN buildDeps="make gcc g++ libc-dev ruby-dev" \
+RUN buildDeps="make gcc g++ libc-dev ruby-dev build-essential libssl-dev libxml2-dev libxslt1-dev zlib1g-dev " \
     && apt-get update && apt-get install -y --allow-downgrades --no-install-recommends $buildDeps sudo \
     && gem sources --add https://gems.ruby-china.com/ --remove https://rubygems.org/ && echo 'gem: --no-document' >> /etc/gemrc \
+    && gem install fluentd-ui && fluentd-ui setup \
     && gem install fluent-plugin-elasticsearch \
     && gem install fluent-plugin-secure-forward \
     && gem install fluent-plugin-record-modifier \
@@ -23,5 +24,8 @@ USER fluent
 VOLUME /fluentd/log ~/.fluentd-ui
 
 ENV FLUENTD_OPT="-qq -c /fluentd/etc/fluent.conf -o /fluentd/log/fluent.log -p /fluentd/plugins"
+ENV FLUENTD_UI_PORT="9292"
+ENV FLUENTD_UI_DATA_DIR="/fluentd"
+
 
 ENTRYPOINT ["/bin/entrypoint.sh"]
