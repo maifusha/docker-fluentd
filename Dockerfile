@@ -2,30 +2,22 @@ FROM fluent/fluentd:v1.2-debian
 
 LABEL maintainer="lixin <1045909037@qq.com>"
 
-COPY conf/fluent.conf /fluentd/etc/
-COPY entrypoint.sh /bin/entrypoint.sh
-
-RUN buildDeps="make gcc g++ libc-dev ruby-dev build-essential libssl-dev libxml2-dev libxslt1-dev zlib1g-dev " \
-    && apt-get update && apt-get install -y --allow-downgrades --no-install-recommends $buildDeps sudo \
-    && gem sources --add https://gems.ruby-china.com/ --remove https://rubygems.org/ && echo 'gem: --no-document' >> /etc/gemrc \
-    && gem install fluentd-ui && fluentd-ui setup \
-    && gem install fluent-plugin-elasticsearch \
-    && gem install fluent-plugin-secure-forward \
-    && gem install fluent-plugin-record-modifier \
-    && gem install fluent-plugin-rewrite-tag-filter \
-    && gem sources --clear-all \
+RUN buildDeps="sudo make gcc g++ libc-dev ruby-dev build-essential libssl-dev libxml2-dev libxslt1-dev zlib1g-dev" \
+    && apt-get update && apt-get install -y --no-install-recommends $buildDeps \
+    && gem sources --add https://gems.ruby-china.com/ --remove https://rubygems.org/ \
+    && gem install fluentd-ui && gem sources --clear-all \
+    && SUDO_FORCE_REMOVE=yes \
     && apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $buildDeps \
-    && rm -rf /tmp/* /var/tmp/* /var/lib/apt/lists/* /usr/lib/ruby/gems/*/cache/*.gem
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/lib/ruby/gems/*/cache/*.gem
 
-RUN groupadd -g 1000 fluent && useradd -m -u 1000 -g 1000 fluent \
-    && chown -R fluent:fluent /fluentd
+RUN groupadd -g 1000 fluent && useradd -m -u 1000 -g 1000 fluent
 USER fluent
 
-VOLUME /fluentd/log ~/.fluentd-ui
-
-ENV FLUENTD_OPT="-qq -c /fluentd/etc/fluent.conf -o /fluentd/log/fluent.log -p /fluentd/plugins"
+ENV FLUENTD_OPT="-c ~/.fluentd-ui/fluent.conf -o ~/.fluentd-ui/fluent.log -p ~/.fluentd-ui/plugins"
 ENV FLUENTD_UI_PORT="9292"
-ENV FLUENTD_UI_DATA_DIR="/fluentd"
 
+VOLUME ~/.fluentd-ui
+
+COPY entrypoint.sh /bin/entrypoint.sh
 
 ENTRYPOINT ["/bin/entrypoint.sh"]
